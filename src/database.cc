@@ -8,7 +8,7 @@ void db::create_empty_component_list_if_component_list_does_not_exist(component_
     }
 }
 
-void db::add_component(component_id id, std::any component) {
+void db::add_component_raw(component_id id, std::any component) {
     create_empty_component_list_if_component_list_does_not_exist(id);
     components.at(id).push_back(component);
 }
