@@ -13,6 +13,7 @@ namespace ecs {
             std::mutex components_mutex;
             
             struct component_container {
+                entity component_entity;
                 std::any component;
             };
 
@@ -29,6 +30,7 @@ namespace ecs {
             const component_list& get_component_list(component_id id) const;
         public:
             entity create_entity();
+            void destroy_entity(entity entity);
 
             template<typename C>
             void add_component(entity entity, const C& component) {
@@ -39,7 +41,8 @@ namespace ecs {
 
                 std::lock_guard lock(*list.mutex);
                 list.containers.push_back({
-                    ref
+                    .component_entity = entity,
+                    .component = ref
                 });
             }
 

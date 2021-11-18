@@ -1,4 +1,5 @@
 #include "database.hh"
+#include "entity.hh"
 #include <iostream>
 #include <thread>
 
@@ -27,13 +28,19 @@ void render_system() {
 void updater_system() {
     workers.push_back(std::thread([&]() {
         for (;;) {
-            db.iterate_component_list<transform>([](auto tf) {
-                tf->x += 1.f;
-                tf->y += 1.f;
+            std::vector<ecs::entity> entities_to_destroy;
+            db.iterate_component_list<transform>([&](auto tf) {
+                if (tf->x >= 5.f) {
+                    entities_to_destroy.push_back(tf->entity);
+                } else {
+                    tf->x += 1.f;
+                    tf->y += 1.f;
+                    db.add_component(tf->entity, collision{ .collides_with = tf->entity });
+                }
             });
-            db.iterate_component_list_const<transform>([](auto tf) {
-                db.add_component(tf->entity, collision{ .collides_with = tf->entity });
-            });
+            for (auto entity : entities_to_destroy) {
+                db.destroy_entity(entity);
+            }
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     }));
