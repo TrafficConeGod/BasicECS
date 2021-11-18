@@ -5,16 +5,19 @@ using db = ecs::database;
 void db::create_empty_component_list_if_component_list_does_not_exist(component_id id) {
     if (components.count(id) == 0) {
         std::lock_guard lock(components_mutex);
-        components.insert(std::make_pair(id, std::vector<std::any>()));
+        components.insert(std::make_pair(id, component_list{
+            new std::mutex(),
+            std::vector<component_container>()
+        }));
     }
 }
 
-std::vector<std::any>& db::get_component_list(component_id id) {
+db::component_list& db::get_component_list(component_id id) {
     create_empty_component_list_if_component_list_does_not_exist(id);
     return components.at(id);
 }
 
-const std::vector<std::any>& db::get_component_list(component_id id) const {
+const db::component_list& db::get_component_list(component_id id) const {
     return components.at(id);
 }
 

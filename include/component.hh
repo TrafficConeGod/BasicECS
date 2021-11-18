@@ -15,7 +15,6 @@ namespace ecs {
     struct base_component : public head_component {
         static const component_id ID;
         static const std::size_t SIZE;
-        static std::mutex MUTEX;
     };
 
     template<typename R>
@@ -23,9 +22,6 @@ namespace ecs {
 
     template<typename R>
     const std::size_t base_component<R>::SIZE(sizeof(R));
-
-    template<typename R>
-    std::mutex base_component<R>::MUTEX;
 
     template<typename C>
     class component_ref {
