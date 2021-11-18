@@ -49,9 +49,9 @@ void updater_system() {
 void collision_system() {
     workers.push_back(std::thread([&]() {
         for (;;) {
-            db.wait_for_component_add<collision>([&](auto col) {
-                std::cout << col->entity << " collided with " << col->collides_with << "\n";
+            db.wait_for_component_add_const<collision>([&](auto col) {
                 db.remove_component(col);
+                std::cout << col->entity << " collided with " << col->collides_with << "\n";
             });
         }
     }));

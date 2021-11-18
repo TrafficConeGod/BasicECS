@@ -27,7 +27,7 @@ namespace ecs {
                 std::vector<component_container> containers;
 
                 mutable std::mutex* last_component_mutex;
-                bool has_last_component = false;
+                mutable bool has_last_component = false;
                 std::any last_component;
             };
 
@@ -118,9 +118,23 @@ namespace ecs {
                 func(std::any_cast<component_ref<C>>(last_component));
             }
 
-            // template<typename C>
-            // void wait_for_component_add(const std::function<void(const component_ref<C>)>& func) const {
-            //     // unimplemented
-            // }
+            template<typename C>
+            void wait_for_component_add_const(const std::function<void(const component_ref<C>)>& func) const {
+                auto& list = get_component_list(C::ID);
+
+                {
+                    std::unique_lock lock(*list.cv_mutex);
+                    list.cv->wait(lock, [&]() {
+                        return list.has_last_component;
+                    });
+                }
+
+                list.last_component_mutex->lock();
+                list.has_last_component = false;
+                auto last_component = list.last_component;
+                list.last_component_mutex->unlock();
+
+                func(std::any_cast<const component_ref<C>>(last_component));
+            }
     };
 };
