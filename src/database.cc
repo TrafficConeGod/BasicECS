@@ -6,9 +6,13 @@ void db::create_empty_component_list_if_component_list_does_not_exist(component_
     if (components.count(id) == 0) {
         std::lock_guard lock(components_mutex);
         components.insert(std::make_pair(id, component_list{
-            .mutex = new std::mutex(), // this memory leak is intentional,
+            .cv_mutex = new std::mutex(), // this memory leak is intentional
             .cv = new std::condition_variable(), // this one too
-            .containers = std::vector<component_container>()
+            .containers_mutex = new std::mutex(), // yeah
+            .containers = std::vector<component_container>(),
+            .last_component_mutex = new std::mutex(),
+            .has_last_component = false,
+            .last_component = std::any()
         }));
     }
 }
@@ -34,7 +38,7 @@ void db::destroy_entity(entity entity) {
         auto containers_clone = list.containers;
 
         std::size_t index = 0;
-        std::lock_guard lock(*list.mutex);
+        std::lock_guard lock(*list.containers_mutex);
         for (auto& container_clone : containers_clone) {
             if (container_clone.component_entity == entity) {
                 containers.erase(containers.begin() + index);

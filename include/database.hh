@@ -7,6 +7,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
+#include <iostream>
 
 namespace ecs {
     class database {
@@ -20,9 +21,15 @@ namespace ecs {
             };
 
             struct component_list {
-                mutable std::mutex* mutex;
+                mutable std::mutex* cv_mutex;
                 mutable std::condition_variable* cv;
+
+                mutable std::mutex* containers_mutex;
                 std::vector<component_container> containers;
+
+                mutable std::mutex* last_component_mutex;
+                bool has_last_component = false;
+                std::any last_component;
             };
 
             std::map<component_id, component_list> components;
@@ -42,11 +49,18 @@ namespace ecs {
 
                 auto& list = get_component_list(C::ID);
 
-                std::lock_guard lock(*list.mutex);
-                list.containers.push_back({
-                    .component_entity = entity,
-                    .component = ref
-                });
+                {
+                    std::lock_guard lock(*list.containers_mutex);
+                    list.containers.push_back({
+                        .component_entity = entity,
+                        .component = ref
+                    });
+                }
+
+                std::lock_guard lock(*list.last_component_mutex);
+                list.last_component = ref;
+                list.has_last_component = true;
+                list.cv->notify_all();
             }
 
             template<typename C>
@@ -54,7 +68,7 @@ namespace ecs {
                 auto& list = get_component_list(C::ID);
                 auto& containers = list.containers;
 
-                std::lock_guard lock(*list.mutex);
+                std::lock_guard lock(*list.containers_mutex);
                 for (auto it = containers.begin(); it != containers.end(); it++) {
                     component_ref<C> checkComponent = std::any_cast<component_ref<C>>(*it.component);
                     if (checkComponent == component) {
@@ -69,7 +83,7 @@ namespace ecs {
                 auto& list = get_component_list(C::ID);
                 auto& containers = list.containers;
 
-                std::lock_guard lock(*list.mutex);
+                std::lock_guard lock(*list.containers_mutex);
                 for (auto container : containers) {
                     func(std::any_cast<component_ref<C>>(container.component));
                 }
@@ -80,20 +94,34 @@ namespace ecs {
                 auto& list = get_component_list(C::ID);
                 auto& containers = list.containers;
 
-                std::lock_guard lock(*list.mutex);
-                for (const auto container : containers) {
+                std::lock_guard lock(*list.containers_mutex);
+                for (auto container : containers) {
                     func(std::any_cast<const component_ref<C>>(container.component));
                 }
             }
 
             template<typename C>
             void wait_for_component_add(const std::function<void(component_ref<C>)>& func) {
-                // unimplemented
+                auto& list = get_component_list(C::ID);
+
+                {
+                    std::unique_lock lock(*list.cv_mutex);
+                    list.cv->wait(lock, [&]() {
+                        return list.has_last_component;
+                    });
+                }
+
+                list.last_component_mutex->lock();
+                list.has_last_component = false;
+                auto last_component = list.last_component;
+                list.last_component_mutex->unlock();
+
+                func(std::any_cast<component_ref<C>>(last_component));
             }
 
-            template<typename C>
-            void wait_for_component_add(const std::function<void(const component_ref<C>)>& func) const {
-                // unimplemented
-            }
+            // template<typename C>
+            // void wait_for_component_add(const std::function<void(const component_ref<C>)>& func) const {
+            //     // unimplemented
+            // }
     };
 };

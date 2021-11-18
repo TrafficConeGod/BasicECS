@@ -19,7 +19,7 @@ void render_system() {
     workers.push_back(std::thread([&]() {
         for (;;) {
             db.iterate_component_list_const<transform>([](auto tf) {
-                std::cout << tf->x << " " << tf->y << "\n";
+                // std::cout << tf->x << " " << tf->y << "\n";
             });
         }
     }));
@@ -48,9 +48,11 @@ void updater_system() {
 
 void collision_system() {
     workers.push_back(std::thread([&]() {
-        db.wait_for_component_add<collision>([](auto col) {
-            std::cout << col->entity << " collided with " << col->collides_with << "\n";
-        });
+        for (;;) {
+            db.wait_for_component_add<collision>([](auto col) {
+                std::cout << col->entity << " collided with " << col->collides_with << "\n";
+            });
+        }
     }));
 }
 
