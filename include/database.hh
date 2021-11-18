@@ -13,7 +13,8 @@ namespace ecs {
 
             void create_empty_component_list_if_component_list_does_not_exist(component_id id);
 
-            void add_component_raw(component_id id, std::any component);
+            std::any add_component_raw(component_id id, std::any component);
+            void remove_component_raw(component_id id, std::any component);
 
             std::vector<std::any>& get_component_list(component_id id);
             const std::vector<std::any>& get_component_list(component_id id) const;
@@ -21,10 +22,22 @@ namespace ecs {
             entity create_entity();
 
             template<typename C>
-            void add_component(entity entity, const C& component) {
+            component_ref<C> add_component(entity entity, const C& component) {
                 component_ref<C> ref = component;
                 ref->entity = entity;
-                add_component_raw(C::ID, ref);
+                return std::any_cast<component_ref<C>>(add_component_raw(C::ID, ref));
+            }
+
+            template<typename C>
+            void remove_component(const component_ref<C> component) {
+                auto& list = get_component_list(C::ID);
+                for (auto it = list.begin(); it != list.end(); it++) {
+                    component_ref<C> checkComponent = std::any_cast<component_ref<C>>(*it);
+                    if (checkComponent == component) {
+                        list.erase(it);
+                        return;
+                    }
+                }
             }
 
             template<typename C>

@@ -33,5 +33,6 @@ namespace ecs {
             C* operator->() { return pointer.get(); }
             const C& operator*() const { return *pointer; }
             const C* operator->() const { return pointer.get(); }
+            bool operator==(const component_ref<C> rhs) const { return pointer.get() == rhs.pointer.get(); }
     };
 }

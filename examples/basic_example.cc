@@ -35,6 +35,7 @@ void updater_system() {
             db.iterate_component_list<transform>([](auto tf) {
                 tf->x += 0.1f;
                 tf->y += 0.1f;
+                db.remove_component(tf);
             });
         }
     }));
@@ -51,7 +52,7 @@ void collision_system() {
 
 int main() {
     auto my_entity = db.create_entity();
-    db.add_component(my_entity, transform{ .x = 0, .y = 0 });
+    auto comp = db.add_component(my_entity, transform{ .x = 0, .y = 0 });
 
     render_system();
     updater_system();
