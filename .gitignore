@@ -1,5 +1,6 @@
 *.o
 *.so
 *.out
-*.elf
 .vscode
+lib_build
+example_build

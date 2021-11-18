@@ -27,7 +27,8 @@ namespace ecs {
         private:
             std::shared_ptr<C> pointer;
         public:
-            component_ref(std::shared_ptr<C> ptr) : pointer(ptr) {}
+            component_ref(const C& val) : pointer{std::make_shared<C>(val)} {}
+            component_ref(std::shared_ptr<C> ptr) : pointer{ptr} {}
             C& operator*() { return *pointer; }
             C* operator->() { return pointer.get(); }
             const C& operator*() const { return *pointer; }
