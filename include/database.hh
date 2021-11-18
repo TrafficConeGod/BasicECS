@@ -70,7 +70,7 @@ namespace ecs {
 
                 std::lock_guard lock(*list.containers_mutex);
                 for (auto it = containers.begin(); it != containers.end(); it++) {
-                    component_ref<C> checkComponent = std::any_cast<component_ref<C>>(*it.component);
+                    component_ref<C> checkComponent = std::any_cast<component_ref<C>>(it->component);
                     if (checkComponent == component) {
                         containers.erase(it);
                         return;
