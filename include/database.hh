@@ -100,6 +100,32 @@ namespace ecs {
             }
 
             template<typename C>
+            void iterate_component_list_for_entity(entity entity, const std::function<void(const component_ref<C>)>& func) {
+                auto& list = get_component_list(C::ID);
+                auto& containers = list.containers;
+
+                std::lock_guard lock(*list.containers_mutex);
+                for (auto container : containers) {
+                    if (container.component_entity == entity) {
+                        func(std::any_cast<component_ref<C>>(container.component));
+                    }
+                }
+            }
+
+            template<typename C>
+            void iterate_component_list_for_entity(entity entity, const std::function<void(const component_ref<C>)>& func) const {
+                auto& list = get_component_list(C::ID);
+                auto& containers = list.containers;
+
+                std::lock_guard lock(*list.containers_mutex);
+                for (auto container : containers) {
+                    if (container.component_entity == entity) {
+                        func(std::any_cast<const component_ref<C>>(container.component));
+                    }
+                }
+            }
+
+            template<typename C>
             void wait_for_component_add(const std::function<void(component_ref<C>)>& func) {
                 auto& list = get_component_list(C::ID);
 
