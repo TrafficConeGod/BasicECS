@@ -6,8 +6,9 @@ void db::create_empty_component_list_if_component_list_does_not_exist(component_
     if (components.count(id) == 0) {
         std::lock_guard lock(components_mutex);
         components.insert(std::make_pair(id, component_list{
-            new std::mutex(), // this memory leak is intentional
-            std::vector<component_container>()
+            .mutex = new std::mutex(), // this memory leak is intentional,
+            .cv = new std::condition_variable(), // this one too
+            .containers = std::vector<component_container>()
         }));
     }
 }

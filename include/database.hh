@@ -5,11 +5,13 @@
 #include <vector>
 #include <any>
 #include <mutex>
+#include <condition_variable>
+#include <atomic>
 
 namespace ecs {
     class database {
         private:
-            entity next_entity;
+            std::atomic<entity> next_entity;
             std::mutex components_mutex;
             
             struct component_container {
@@ -19,6 +21,7 @@ namespace ecs {
 
             struct component_list {
                 mutable std::mutex* mutex;
+                mutable std::condition_variable* cv;
                 std::vector<component_container> containers;
             };
 
