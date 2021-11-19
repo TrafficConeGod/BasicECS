@@ -40,8 +40,8 @@ void render_system() {
                     sf::Vector2u size_u = sfml_sprite.getTexture()->getSize();
                     sf::Vector2f scale_down = sf::Vector2f(1 / (float)size_u.x, 1 / (float)size_u.y);
 
-                    // sfml_sprite.setPosition(tf->x, tf->y);
-                    // sfml_sprite.setScale(tf->width * scale_down.x, tf->height * scale_down.y);
+                    sfml_sprite.setPosition(tf->x, tf->y);
+                    sfml_sprite.setScale(tf->width * scale_down.x, tf->height * scale_down.y);
 
                     window.draw(sfml_sprite);
                 });
@@ -55,7 +55,7 @@ void render_system() {
 int main() {
     auto my_entity = db.create_entity();
 
-    db.add_component(my_entity, transform{ .x = 0, .y = 0 });
+    db.add_component(my_entity, transform{ .x = 100, .y = 100, .width = 323.60679775, .height = 200 });
 
     sf::Texture texture;
     texture.loadFromFile("examples/sfml_example_texture.png");
