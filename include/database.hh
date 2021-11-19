@@ -19,24 +19,23 @@ namespace ecs {
             };
 
             struct component_list {
-                mutable std::mutex* cv_mutex;
-                mutable std::condition_variable* cv;
+                std::mutex* cv_mutex;
+                std::condition_variable* cv;
 
-                mutable std::mutex* containers_mutex;
+                std::mutex* containers_mutex;
                 std::vector<component_container> containers;
 
-                mutable std::mutex* last_component_mutex;
-                mutable bool has_last_component = false;
+                std::mutex* last_component_mutex;
+                bool has_last_component = false;
                 std::any last_component;
             };
 
-            mutable std::mutex components_mutex;
-            mutable std::map<component_id, component_list> components;
+            std::mutex components_mutex;
+            std::map<component_id, component_list> components;
 
-            void create_empty_component_list_if_component_list_does_not_exist(component_id id) const;
+            void create_empty_component_list_if_component_list_does_not_exist(component_id id);
 
             component_list& get_component_list(component_id id);
-            const component_list& get_component_list(component_id id) const;
         public:
             entity create_entity();
             void destroy_entity(entity entity);
@@ -89,17 +88,6 @@ namespace ecs {
             }
 
             template<typename C>
-            void iterate_component_list_const(const std::function<void(const component_ref<C>)>& func) const {
-                auto& list = get_component_list(C::ID);
-                auto& containers = list.containers;
-
-                std::lock_guard lock(*list.containers_mutex);
-                for (auto container : containers) {
-                    func(std::any_cast<const component_ref<C>>(container.component));
-                }
-            }
-
-            template<typename C>
             void iterate_component_list_for_entity(entity entity, const std::function<void(const component_ref<C>)>& func) {
                 auto& list = get_component_list(C::ID);
                 auto& containers = list.containers;
@@ -108,19 +96,6 @@ namespace ecs {
                 for (auto container : containers) {
                     if (container.component_entity == entity) {
                         func(std::any_cast<component_ref<C>>(container.component));
-                    }
-                }
-            }
-
-            template<typename C>
-            void iterate_component_list_for_entity_const(entity entity, const std::function<void(const component_ref<C>)>& func) const {
-                auto& list = get_component_list(C::ID);
-                auto& containers = list.containers;
-
-                std::lock_guard lock(*list.containers_mutex);
-                for (auto container : containers) {
-                    if (container.component_entity == entity) {
-                        func(std::any_cast<const component_ref<C>>(container.component));
                     }
                 }
             }
@@ -142,25 +117,6 @@ namespace ecs {
                 list.last_component_mutex->unlock();
 
                 func(std::any_cast<component_ref<C>>(last_component));
-            }
-
-            template<typename C>
-            void wait_for_component_add_const(const std::function<void(const component_ref<C>)>& func) const {
-                auto& list = get_component_list(C::ID);
-
-                {
-                    std::unique_lock lock(*list.cv_mutex);
-                    list.cv->wait(lock, [&]() {
-                        return list.has_last_component;
-                    });
-                }
-
-                list.last_component_mutex->lock();
-                list.has_last_component = false;
-                auto last_component = list.last_component;
-                list.last_component_mutex->unlock();
-
-                func(std::any_cast<const component_ref<C>>(last_component));
             }
     };
 };

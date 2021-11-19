@@ -18,7 +18,7 @@ struct collision : public ecs::base_component<collision> {
 void render_system() {
     workers.push_back(std::thread([&]() {
         for (;;) {
-            db.iterate_component_list_const<transform>([](auto tf) {
+            db.iterate_component_list<transform>([](const auto tf) {
                 // std::cout << tf->x << " " << tf->y << "\n";
             });
         }
@@ -49,7 +49,7 @@ void updater_system() {
 void collision_system() {
     workers.push_back(std::thread([&]() {
         for (;;) {
-            db.wait_for_component_add_const<collision>([&](auto col) {
+            db.wait_for_component_add<collision>([&](const auto col) {
                 db.remove_component(col);
                 std::cout << col->entity << " collided with " << col->collides_with << "\n";
             });

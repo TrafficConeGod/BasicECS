@@ -2,10 +2,10 @@
 #include "entity.hh"
 #include <iostream>
 #include <thread>
+#include <chrono>
 #include <SFML/Graphics.hpp>
 
 sf::RenderWindow window(sf::VideoMode(1280, 720), "Game");
-sf::Clock main_clock;
 
 ecs::database db;
 std::vector<std::thread> workers;
@@ -33,9 +33,9 @@ void render_system() {
 
             window.clear();
 
-            db.iterate_component_list_const<transform>([&](auto tf) {
-                db.iterate_component_list_for_entity_const<sprite>(tf->entity, [&](auto sprite) {
-                    auto sfml_sprite = sprite->sfml_sprite;
+            db.iterate_component_list<transform>([&](const auto tf) {
+                db.iterate_component_list_for_entity<sprite>(tf->entity, [&](auto sp) {
+                    auto& sfml_sprite = sp->sfml_sprite;
 
                     sf::Vector2u size_u = sfml_sprite.getTexture()->getSize();
                     sf::Vector2f scale_down = sf::Vector2f(1 / (float)size_u.x, 1 / (float)size_u.y);
