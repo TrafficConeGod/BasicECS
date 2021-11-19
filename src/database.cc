@@ -2,7 +2,7 @@
 
 using db = ecs::database;
 
-void db::create_empty_component_list_if_component_list_does_not_exist(component_id id) {
+void db::create_empty_component_list_if_component_list_does_not_exist(component_id id) const {
     if (components.count(id) == 0) {
         std::lock_guard lock(components_mutex);
         components.insert(std::make_pair(id, component_list{
@@ -23,6 +23,7 @@ db::component_list& db::get_component_list(component_id id) {
 }
 
 const db::component_list& db::get_component_list(component_id id) const {
+    create_empty_component_list_if_component_list_does_not_exist(id);
     return components.at(id);
 }
 

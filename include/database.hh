@@ -12,7 +12,6 @@ namespace ecs {
     class database {
         private:
             std::atomic<entity> next_entity;
-            std::mutex components_mutex;
             
             struct component_container {
                 entity component_entity;
@@ -31,9 +30,10 @@ namespace ecs {
                 std::any last_component;
             };
 
-            std::map<component_id, component_list> components;
+            mutable std::mutex components_mutex;
+            mutable std::map<component_id, component_list> components;
 
-            void create_empty_component_list_if_component_list_does_not_exist(component_id id);
+            void create_empty_component_list_if_component_list_does_not_exist(component_id id) const;
 
             component_list& get_component_list(component_id id);
             const component_list& get_component_list(component_id id) const;
@@ -113,7 +113,7 @@ namespace ecs {
             }
 
             template<typename C>
-            void iterate_component_list_for_entity(entity entity, const std::function<void(const component_ref<C>)>& func) const {
+            void iterate_component_list_for_entity_const(entity entity, const std::function<void(const component_ref<C>)>& func) const {
                 auto& list = get_component_list(C::ID);
                 auto& containers = list.containers;
 
