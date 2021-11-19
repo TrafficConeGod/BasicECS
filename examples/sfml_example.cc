@@ -18,14 +18,7 @@ struct transform : public ecs::base_component<transform> {
 };
 
 struct sprite : public ecs::base_component<sprite> {
-    std::shared_ptr<sf::Sprite> sfml_sprite;
-};
-
-struct circle : public ecs::base_component<circle> {
-    float radius;
-    float r;
-    float g;
-    float b;
+    sf::Sprite sfml_sprite;
 };
 
 void render_system() {
@@ -44,34 +37,17 @@ void render_system() {
                 db.iterate_component_list_for_entity_const<sprite>(tf->entity, [&](auto sprite) {
                     auto sfml_sprite = sprite->sfml_sprite;
 
-                    sf::Vector2u size_u = sfml_sprite.get()->getTexture()->getSize();
+                    sf::Vector2u size_u = sfml_sprite.getTexture()->getSize();
                     sf::Vector2f scale_down = sf::Vector2f(1 / (float)size_u.x, 1 / (float)size_u.y);
 
-                    sfml_sprite.get()->setPosition(tf->x, tf->y);
-                    sfml_sprite.get()->setScale(tf->width * scale_down.x, tf->height * scale_down.y);
+                    // sfml_sprite.setPosition(tf->x, tf->y);
+                    // sfml_sprite.setScale(tf->width * scale_down.x, tf->height * scale_down.y);
 
-                    window.draw(*sfml_sprite.get());
-                });
-                db.iterate_component_list_for_entity_const<circle>(tf->entity, [&](auto circle) {
-                    sf::CircleShape shape(circle->radius);
-                    shape.setFillColor(sf::Color(circle->r, circle->g, circle->b));
-                    window.draw(shape);
+                    window.draw(sfml_sprite);
                 });
             });
 
             window.display();
-        }
-    }));
-}
-
-void updater_system() {
-    workers.push_back(std::thread([&]() {
-        for (;;) {
-            std::vector<ecs::entity> entities_to_destroy;
-            db.iterate_component_list<transform>([&](auto tf) {
-                tf->x += 0.1f;
-                tf->y += 0.1f;
-            });
         }
     }));
 }
@@ -81,16 +57,15 @@ int main() {
 
     db.add_component(my_entity, transform{ .x = 0, .y = 0 });
 
-    // sf::Texture texture;
-    // texture.loadFromFile("examples/sfml_example_texture.png");
+    sf::Texture texture;
+    texture.loadFromFile("examples/sfml_example_texture.png");
 
-    // auto sfml_sprite = std::make_shared<sf::Sprite>();
-    // sfml_sprite->setTexture(texture);
+    sf::Sprite sfml_sprite;
+    sfml_sprite.setTexture(texture);
 
-    db.add_component(my_entity, circle{ .radius = 100, .r = 255, .g = 0, .b = 0 });
+    db.add_component(my_entity, sprite{ .sfml_sprite = sfml_sprite });
 
     render_system();
-    updater_system();
 
     for (auto& worker : workers) {
         worker.join();
