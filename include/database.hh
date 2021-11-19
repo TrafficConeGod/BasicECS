@@ -101,6 +101,30 @@ namespace ecs {
             }
 
             template<typename C>
+            std::size_t get_component_list_size() {
+                auto& list = get_component_list(C::ID);
+                auto& containers = list.containers;
+
+                std::lock_guard lock(*list.containers_mutex);
+                return containers.size();
+            }
+
+            template<typename C>
+            std::size_t get_component_list_size_for_entity(entity entity) {
+                auto& list = get_component_list(C::ID);
+                auto& containers = list.containers;
+
+                std::lock_guard lock(*list.containers_mutex);
+                std::size_t size = 0;
+                for (auto container : containers) {
+                    if (container.component_entity == entity) {
+                        size++;
+                    }
+                }
+                return size;
+            }
+
+            template<typename C>
             void wait_for_component_add(const std::function<void(component_ref<C>)>& func) {
                 auto& list = get_component_list(C::ID);
 
