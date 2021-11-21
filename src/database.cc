@@ -2,24 +2,29 @@
 
 using db = ecs::database;
 
-void db::create_empty_component_list_if_component_list_does_not_exist(component_id id) {
-    if (components.count(id) == 0) {
-        std::lock_guard lock(components_mutex);
-        components.insert(std::make_pair(id, component_list{
+db::component_list& db::get_component_list(component_id id) {
+    if (component_lists.count(id) == 0) {
+        std::lock_guard lock(component_lists_mutex);
+        component_lists.insert(std::make_pair(id, component_list{
             .cv_mutex = new std::mutex(), // this memory leak is intentional
             .cv = new std::condition_variable(), // this one too
-            .containers_mutex = new std::mutex(), // yeah
-            .containers = std::vector<component_container>(),
-            .last_component_mutex = new std::mutex(),
+            .components_mutex = new std::mutex(), // and this one
+            .components = std::map<entity, std::vector<std::any>>(),
+            .components_count = 0,
+            .last_component_mutex = new std::mutex(), // yeah
             .has_last_component = false,
             .last_component = std::any()
         }));
     }
+    return component_lists.at(id);
 }
 
-db::component_list& db::get_component_list(component_id id) {
-    create_empty_component_list_if_component_list_does_not_exist(id);
-    return components.at(id);
+std::vector<std::any>& db::get_components_for_entity(component_list& list, entity entity) {
+    if (list.components.count(entity) == 0) {
+        std::lock_guard lock(*list.components_mutex);
+        list.components.insert(std::make_pair(entity, std::vector<std::any>()));
+    }
+    return list.components.at(entity);
 }
 
 ecs::entity db::create_entity() {
@@ -27,20 +32,11 @@ ecs::entity db::create_entity() {
 }
 
 void db::destroy_entity(entity entity) {
-    std::lock_guard lock(components_mutex);
-    for (auto& [_, list] : components) {
-        auto& containers = list.containers;
-
-        auto containers_clone = list.containers;
-
-        std::size_t index = 0;
-        std::lock_guard lock(*list.containers_mutex);
-        for (auto& container_clone : containers_clone) {
-            if (container_clone.component_entity == entity) {
-                containers.erase(containers.begin() + index);
-                index--;
-            }
-            index++;
+    std::lock_guard lock(component_lists_mutex);
+    for (auto& [_, list] : component_lists) {
+        std::lock_guard lock(*list.components_mutex);
+        if (list.components.count(entity)) {
+            list.components.erase(entity);
         }
     }
 }
